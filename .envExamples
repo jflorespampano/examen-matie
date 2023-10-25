@@ -1,0 +1,8 @@
+PORT=3000
+SQLITE3_DB_NAME="dataBase.sqlite"
+SQLITE3_DB_MEMORY=":memory:"
+MYSQL_HOST=""
+MYSQL_DB_NAME=""
+MYSQL_USER=""
+MYSQL_PASSWORD=""
+URL="http://localhost"
