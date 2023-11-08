@@ -1,0 +1,29 @@
+[
+    {
+        "id":0,
+        "correo":"ana@gmail.com",
+        "password":"r7S51rWN",
+        "matricula":"1234",
+        "nombre":"ana maria pacheco garcia",
+        "sexo":"f",
+        "carrera":"lti"
+    },
+    {
+        "id":0,
+        "correo":"luis@gmail.com",
+        "password":"44iof9RW",
+        "matricula":"1234",
+        "nombre":"luis ruiz rios",
+        "sexo":"m",
+        "carrera":"lti"
+    },
+    {
+        "id":0,
+        "correo":"pedro@gmail.com",
+        "password":"c1Dvz4RP",
+        "matricula":"1234",
+        "nombre":"pedro uc chan",
+        "sexo":"m",
+        "carrera":"lti"
+    }
+]

@@ -1,26 +1,26 @@
+import MiRepository from "./repositoryPofesor.js"
 import  express from "express"
-import AppDao from "./dao.cjs"
-import ProfesorRepository from "./profesorRepository.js"
-import dotenv from 'dotenv'
+import getDao from "./factoryDao.js"
 
-dotenv.config() //cargar los datos del archivo .env en processs.env
-const SQLITE3_DB_NAME=process.env.SQLITE3_DB_NAME
+const miRouter=express()
+const dao=getDao()
 
-const userRouter=express()
-let dao = null
-let profeRepo= null
-userRouter.use((req,res,next)=>{
-    console.log(req.ip)
-    dao = new AppDao(SQLITE3_DB_NAME)
-    profeRepo=new ProfesorRepository(dao)
+miRouter.use((req,res,next)=>{
+    // console.log(req.ip)
     next()
 })
+
 //espera una url asi: http://localhost:3000/profesor/1
 //el '/profesor' se maneja al cargar el middleware cuando se pone: app.use("/user",profesorRouter)
-userRouter.get("/:id",(req,res)=>{
+miRouter.get("/:id",(req,res)=>{
     //console.log(req.params)
     const {id}=req.params
-    profeRepo.getById(id)
+    const miRepo=new MiRepository(dao)
+    dao.open()
+    .then((d)=>{
+        // console.log(d)
+        return miRepo.getById(id)
+    })
     .then(data=>{
         if(data===undefined){
             data={}
@@ -45,8 +45,12 @@ userRouter.get("/:id",(req,res)=>{
     })
 })
 //
-userRouter.get("",(req,res)=>{
-    profeRepo.getAll()
+miRouter.get("",(req,res)=>{
+    const miRepo=new MiRepository(dao)
+    dao.open()
+    .then(()=>{
+        return miRepo.getAll()  
+    })
     .then(data=>{
         if(data===undefined){
             data={}
@@ -70,22 +74,30 @@ userRouter.get("",(req,res)=>{
     })
 })
 //espera:http://localhost:3000/profesor  con un body
-userRouter.post('',(req,res)=>{
-    const dao = new AppDao(SQLITE3_DB_NAME)
-    const profeRepo=new ProfesorRepository(dao)
-    //console.log(req.body)
+miRouter.post('',(req,res)=>{
+    const miRepo=new MiRepository(dao)
     const {num_emp,name,mail1,mail2,telefon}=req.body
     if(!num_emp || !name || !mail1 || !mail2 || !telefon){
         res.status(418).send('Faltan datos')
     }else{
-        profeRepo.create({num_emp,name,mail1,mail2,telefon})
+        dao.open()
+        .then(()=>{
+            console.log("abrierta .....")
+            return miRepo.create({num_emp,name,mail1,mail2,telefon})
+        })
         .then(data=>{
             //console.log(data)
             res.set({"content-type":"application/json; charset=utf-8"})
             res.send(data)
         })
         .catch(err=>{
-            res.status(400).send("error desconocido al insertar un dato", err);
+            const resp=`
+            {
+                "error":"error desconocido al insertar un dato",
+                "msg": "${err}"
+            }
+            `
+            res.status(400).send(resp);
         })
         .finally(()=>{
             dao.close()
@@ -94,23 +106,31 @@ userRouter.post('',(req,res)=>{
 })
 
 //actualizar el campo nombre
-userRouter.patch('/:id',(req,res)=>{
-    const dao = new AppDao(SQLITE3_DB_NAME)
-    const profeRepo=new ProfesorRepository(dao)
+miRouter.patch('/:id',(req,res)=>{
     const {id}=req.params
+    const miRepo=new MiRepository(dao)
     //console.log(req.body)
     const {num_emp,name,mail1,mail2,telefon}=req.body
     if(!num_emp || !name || !mail1 || !mail2 || !telefon){
-        res.status(418).send('Faltan datos')
+        res.status(418).send('<p>Faltan datos (num_emp/name/mail1/mil2/telefon)</p>')
     }else{
-        profeRepo.update({id,num_emp,name,mail1,mail2,telefon})
+        dao.open()
+        .then(()=>{
+            return miRepo.update({num_emp,name,mail1,mail2,telefon,id})
+        })
         .then(data=>{
             console.log(data)
             res.set({"content-type":"application/json; charset=utf-8"})
             res.send(data)
         })
         .catch(err=>{
-            res.status(400).send("error desconocido al insertar un dato", err)
+            const resp=`
+            {
+                "error":"error desconocido al actualizar un dato",
+                "msg": "${err}"
+            }
+            `
+            res.status(400).send(resp);
         })
         .finally(()=>{
             dao.close()
@@ -118,12 +138,13 @@ userRouter.patch('/:id',(req,res)=>{
     }
     
 })
-userRouter.delete('/:id',(req,res)=>{
-    //console.log(req.params)
-    const dao = new AppDao(SQLITE3_DB_NAME)
-    const profeRepo=new ProfesorRepository(dao)
+miRouter.delete('/:id',(req,res)=>{
     const {id}=req.params
-    profeRepo.delete(id)
+    const miRepo=new MiRepository(dao)
+    dao.open()
+    .then(()=>{
+        return miRepo.delete(id)
+    })
     .then(data=>{
         res.set({"content-type":"application/json; charset=utf-8"})
         res.send(data)
@@ -136,4 +157,4 @@ userRouter.delete('/:id',(req,res)=>{
     })
 })
 
-export default userRouter
+export default miRouter

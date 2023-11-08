@@ -1,12 +1,10 @@
-import AppDao from "./dao.cjs"
-import ProfesorRepository from "./profesorRepository.js"
-import MateriaRepository from "./materiaRepository.js"
-import TemaRepository from "./temaRepository.js"
-import PreguntaRepository from "./preguntaRepository.js"
-import dotenv from 'dotenv'
+import ProfesorRepository from "./repositoryPofesor.js"
+import MateriaRepository from "./repositoryMateria.js"
+import TemaRepository from "./repositoryTema.js"
+import PreguntaRepository from "./repositoryPregunta.js"
+import getDao from "./factoryDao.js"
 
-dotenv.config() //cargar los datos del archivo .env en processs.env
-const SQLITE3_DB_NAME=process.env.SQLITE3_DB_NAME
+const dao=getDao()
 
 export class MisFunciones{
     static crea_y_puebla(xRepo){
@@ -22,9 +20,12 @@ export class MisFunciones{
     }
     static inicializa_Repo(Repos){
         //crea las tablas recibidas en el arrgelo Repos
-        return Promise.all(Repos.map((repo)=>{
-            return MisFunciones.crea_y_puebla(repo)
-        }))
+        dao.open()
+        .then(()=>{
+            return Promise.all(Repos.map((repo)=>{
+                return MisFunciones.crea_y_puebla(repo)
+            }))
+        })
         .then((result)=>{
             //para probar, muestra el primer datos de cada tabla
             return Promise.all(Repos.map((repo)=>{
@@ -42,9 +43,11 @@ export class MisFunciones{
             console.log("Error en inicializa ", err)
             return Promise.reject(err)
         })
+        .finally(()=>{
+            dao.close()
+        })
     }
     static inicializa_DB(){
-        const dao = new AppDao(SQLITE3_DB_NAME)
         //objetos
         const profeRepo=new ProfesorRepository(dao)
         const materiaRepo=new MateriaRepository(dao)

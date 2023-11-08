@@ -1,28 +1,24 @@
-import  express from "express"
-import AppDao from "./dao.cjs"
-import MiRepository from "./temaRepository.js"
-import dotenv from 'dotenv'
-
-dotenv.config() 
-const SQLITE3_DB_NAME=process.env.SQLITE3_DB_NAME
+import MiRepository from "./repositoryTema.js"
+import express from "express"
+import getDao from "./factoryDao.js"
 
 const miRouter=express()
-// let dao = null
-// let miRepo= null
+const dao=getDao()
+
 miRouter.use((req,res,next)=>{
-    console.log(req.ip)
-    // dao = new AppDao(SQLITE3_DB_NAME)
-    // miRepo=new MiRepository(dao)
+    // console.log(req.ip)
     next()
 })
-//espera una url asi: http://localhost:3000/profesor/1
-//el '/profesor' se maneja al cargar el middleware cuando se pone: app.use("/user",profesorRouter)
+//espera una url asi: http://localhost:3000/tema/1
+//el '/tema' se maneja al cargar el middleware cuando se pone: app.use("/tema",profesorRouter)
 miRouter.get("/:id",(req,res)=>{
-    //console.log(req.params)
-    const dao = new AppDao(SQLITE3_DB_NAME)
-    const miRepo=new MiRepository(dao)
     const {id}=req.params
-    miRepo.getById(id)
+    const miRepo=new MiRepository(dao)
+    dao.open()
+    .then((d)=>{
+        console.log(d)
+        return miRepo.getById(id)
+    })
     .then(data=>{
         if(data===undefined){
             data={}
@@ -32,7 +28,13 @@ miRouter.get("/:id",(req,res)=>{
     })
     .then(registro=>{
         if(!registro){
-            res.status(400).send("no existe el dato")
+            const resp=`
+            {
+                "error":"el dato no existe",
+                "msg": ""
+            }
+            `
+            res.status(400).send(resp);
         }else{
             res.set({"content-type":"application/json; charset=utf-8"})
             //console.log(req.params)
@@ -40,22 +42,31 @@ miRouter.get("/:id",(req,res)=>{
         }
     })
     .catch(err=>{
-        res.status(400).send("error deconocido al obtener un dato ", err);
+        const resp=`
+        {
+            "error":"error al obtener un dato",
+            "msg": "${err}"
+        }
+        `
+        res.status(400).send(resp);
     })
     .finally(()=>{
         dao.close()
     })
 })
-//
+
+//espera una url asi: http://localhost:3000/tema
 miRouter.get("",(_,res)=>{
-    const dao = new AppDao(SQLITE3_DB_NAME)
     const miRepo=new MiRepository(dao)
-    miRepo.getAll()
+    dao.open()
+    .then(()=>{
+        return miRepo.getAll()  
+    })
     .then(data=>{
         if(data===undefined){
             data={}
         }
-        console.log(data)
+        //console.log(data)
         return Promise.resolve(data)
     })
     .then(data=>{
@@ -67,29 +78,45 @@ miRouter.get("",(_,res)=>{
         }
     })
     .catch(err=>{
-        res.status(400).send("error desconocido al obtener todos los datos ", err);
+        const resp=`
+        {
+            "error":"error al obtener los datos",
+            "msg": "${err}"
+        }
+        `
+        res.status(400).send(resp);
     })
     .finally(()=>{
         dao.close()
     })
 })
-//espera:http://localhost:3000/profesor  con un body
+//espera:http://localhost:3000/tema  con un body
 miRouter.post('',(req,res)=>{
-    const dao = new AppDao(SQLITE3_DB_NAME)
     const miRepo=new MiRepository(dao)
-    //console.log(req.body)
+    // console.log(req.body)
     const {fk_materia,num_tema,nombre,objetivo}=req.body
     if(!fk_materia || !num_tema || !nombre || !objetivo){
         res.status(418).send('Faltan datos')
     }else{
-        miRepo.create({fk_materia,num_tema,nombre,objetivo})
+        console.log("antes de arir")
+        dao.open()
+        .then(()=>{
+            console.log("abrierta .....")
+            return miRepo.create({fk_materia,num_tema,nombre,objetivo})
+        })
         .then(data=>{
             //console.log(data)
             res.set({"content-type":"application/json; charset=utf-8"})
             res.send(data)
         })
         .catch(err=>{
-            res.status(400).send("error desconocido al insertar un dato", err);
+            const resp=`
+            {
+                "error":"error desconocido al insertar un dato",
+                "msg": "${err}"
+            }
+            `
+            res.status(400).send(resp);
         })
         .finally(()=>{
             dao.close()
@@ -97,24 +124,32 @@ miRouter.post('',(req,res)=>{
     }
 })
 
-//actualizar el campo nombre
+//espera una url asi: http://localhost:3000/tema/1 con un body
 miRouter.patch('/:id',(req,res)=>{
-    const dao = new AppDao(SQLITE3_DB_NAME)
-    const miRepo=new MiRepository(dao)
     const {id}=req.params
+    const miRepo=new MiRepository(dao)
     //console.log(req.body)
     const {fk_materia,num_tema,nombre,objetivo}=req.body
     if(!fk_materia || !num_tema || !nombre || !objetivo){
-        res.status(418).send('Faltan datos')
+        res.status(418).send('<p>Faltan datos (fkmateria/numtema/nombre/objetivo)</p>')
     }else{
-        miRepo.update({id,fk_materia,num_tema,nombre,objetivo})
+        dao.open()
+        .then(()=>{
+            return miRepo.update({id,fk_materia,num_tema,nombre,objetivo})
+        })
         .then(data=>{
             console.log(data)
             res.set({"content-type":"application/json; charset=utf-8"})
             res.send(data)
         })
         .catch(err=>{
-            res.status(400).send("error desconocido al insertar un dato", err)
+            const resp=`
+            {
+                "error":"error desconocido al actualizar un dato",
+                "msg": "${err}"
+            }
+            `
+            res.status(400).send(resp)
         })
         .finally(()=>{
             dao.close()
@@ -122,18 +157,27 @@ miRouter.patch('/:id',(req,res)=>{
     }
     
 })
+
+//espera una url asi: http://localhost:3000/tema/1
 miRouter.delete('/:id',(req,res)=>{
-    //console.log(req.params)
-    const dao = new AppDao(SQLITE3_DB_NAME)
-    const miRepo=new MiRepository(dao)
     const {id}=req.params
-    miRepo.delete(id)
+    const miRepo=new MiRepository(dao)
+    dao.open()
+    .then(()=>{
+        return miRepo.delete(id)
+    })
     .then(data=>{
         res.set({"content-type":"application/json; charset=utf-8"})
         res.send(data)
     })
     .catch(err=>{
-        res.status(400).send("error desconocido al eliminar un dato", err)
+        const resp=`
+        {
+            "error":"error al eliminar un dato",
+            "msg": "${err}"
+        }
+        `
+        res.status(400).send(resp);
     })
     .finally(()=>{
         dao.close()

@@ -1,30 +1,30 @@
+//dao para sqlite
 const sqlite3 =require('sqlite3').verbose()
-
-// const x=new sqlite3.Database("base1.sqlite")
-// const db = new sqlite3.Database(':memory:');
 
 class AppDao{
     constructor(dbFilePath){
-        this.db = new sqlite3.Database(dbFilePath, (err) => {
-            if (err) {
-                console.log('No se pudo conectar a la database: ', err)
-                this.open=false
-            } else {
-                console.log('Connectado a la database')
-                this.open=true
-            }
-        })
+        this.dbFilePath=dbFilePath
+        this.dbOpen=false
+        this.db=null
     }
     open(){
         return new Promise((resolve, reject)=>{
-            if(this.open){
-                resolve(true)
-            }else{
-                reject("La base de datos no esta abierta")
-            }
+            this.db = new sqlite3.Database(this.dbFilePath, (err) => {
+                if (err) {
+                    console.log('No se pudo conectar a la database: ', err)
+                    this.dbOpen=false
+                    reject("La base de datos no se pudo abrir")
+
+                } else {
+                    console.log('Connectado a la database')
+                    this.dbOpen=true
+                    resolve(true)
+                }
+            })
         })
     }
     run(sql, params = []) {
+        // console.log(sql,params)
         return new Promise((resolve, reject) => {
             this.db.run(sql, params, function (err) {
                 if (err) {
@@ -37,6 +37,7 @@ class AppDao{
                     //lastID contiene el inidce del ultimo registro insertado.
                     //changes contiene el indice del ultimo renglon afectado por la consulta.
                     //console.log("en run ",{ id: this.lastID, changes: this.changes })
+                    // console.log({ id: this.lastID, changes: this.changes })
                     resolve({ id: this.lastID, changes: this.changes })
                 }
             })
@@ -73,7 +74,7 @@ class AppDao{
     }
     close(){
         console.log("base de datos cerrada")
-        this.db.close()
+        if(this.dbOpen) this.db.close()
     }
 }
 

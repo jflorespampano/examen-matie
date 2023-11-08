@@ -5,9 +5,9 @@ import profesorRouter from "./routerProfesor.js"
 import materiaRouter from "./routerMateria.js"
 import temaRouter from "./routerTema.js"
 import preguntaRouter from "./routerPregunta.js"
-import examentaRouter from "./routerExamen.js"
+import examenRouter from "./routerExamen.js"
 
-dotenv.config() //cargar los datos del archivo .env en processs.env
+dotenv.config() //cargar los datos del archivo .env y los pone en processs.env
 const PORT=process.env.PORT //obtenemos el puerto
 
 const app=express()
@@ -19,7 +19,7 @@ app.use("/profesor",profesorRouter)
 app.use("/materia",materiaRouter)
 app.use("/tema",temaRouter)
 app.use("/pregunta",preguntaRouter)
-app.use("/examen",examentaRouter)
+app.use("/examen",examenRouter)
 
 app.get('/inicializa', (_, res) => {
     MisFunciones.inicializa_DB()
